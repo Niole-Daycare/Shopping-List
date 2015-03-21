@@ -7,7 +7,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 // Database
 var mongo = require('mongoskin');
-var db = mongo.db("mongodb://localhost:27017/node-tutorial-2-restful-app", {native_parser:true});
+var db = mongo.db("mongodb://localhost:27017/Shopping-List", {native_parser:true});
 
 var routes = require('./routes/index');
 var shoppinglist = require('./routes/shoppinglist');
