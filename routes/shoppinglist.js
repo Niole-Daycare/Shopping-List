@@ -1,6 +1,51 @@
 "use strict";
-var express = require('express');
-var router = express.Router();
+/*global React*/
+module.exports = function(io) {
+  var express = require('express');
+  var router = express.Router();
+  var twilio = require('twilio');
+
+  // TODO: Remove
+  io.on('connection', function(socket){
+    console.log('a user connected');
+    socket.on('disconnect', function(){
+      console.log('user disconnected');
+    });
+  });
+
+router.post('/sendsms', function(req, res) {
+  console.log('inside sendsms');
+  var accountSid = process.env.ACCOUNTSID;
+  var authToken = process.env.AUTHTOKEN;
+  var client = twilio(accountSid, authToken);
+
+  client.sms.messages.create({
+    to: process.env.toNum,
+    from: process.env.fromNum,
+    body:'Going to the store. Anyone want anything?'
+  }, function(error, message) {
+    if (!error) {
+      console.log('Success! The SID for this SMS message is:');
+      console.log(message.sid);
+
+      console.log('Message sent on:');
+      console.log(message.dateCreated);
+    } else {
+      console.log('Oops! There was an error.');
+    }
+  }
+                            );
+                            res.json(true);
+});
+
+router.post('/addfromsms', function(req, res) {
+  var data = {
+    'from' : req.body.From,
+    'items' : req.body.Body // TODO: Split items into a list
+  };
+  console.log('Received POST from Twilio:' + JSON.stringify(data));
+  io.emit('sms recv', data, { for: 'everyone' });
+});
 
 router.post('/postnewlist', function(req, res) {
   console.log('inside post postnewlist');
@@ -54,4 +99,5 @@ router.get('/getlist', function(req, res) {
   });
 });
 
-module.exports = router;
+return router;
+};

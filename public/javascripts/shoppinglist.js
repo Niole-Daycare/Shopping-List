@@ -1,8 +1,26 @@
 "use strict";
 /*global React*/
+var socket = io();
 
 var FormPage = React.createClass({
   getInitialState: function() {
+    socket.on('sms recv', function(data) {
+      var x = new Date();
+      var y = x.getTime();
+      var post = {_id: y,'owner': data.from, 'item': data.items};
+
+      console.log(this.state.ShopList[0]);
+      var newShopList = this.state.ShopList[0];
+      var newItems = newShopList.items;
+      newItems.push(post);
+      newShopList.items = newItems;
+
+      this.setState({ShopList: [newShopList]});
+
+      console.log('smsed post');
+      console.log(post);
+    }.bind(this));
+
     return({ShopList: []});
   },
   componentDidMount: function() {
@@ -29,6 +47,9 @@ var FormPage = React.createClass({
     }
     return (
     <div>
+    <head>
+    <script type="text/javascript" src="sms.js"/>
+    </head>
     <form>
       <input type="text" ref="namefield" placeholder="enter name.."/>
       <br/>
@@ -37,6 +58,7 @@ var FormPage = React.createClass({
       <button className="btn btn-primary" onClick={this._addItems}>add item(s)</button>
       <button className="btn btn-primary" onClick={this._createNew}>create new list</button>
       <button id="titlesubmit" className="btn btn-primary" style={{display:'none'}} onClick={this._postNew}>post new list</button>
+      <button className="btn btn-primary" onClick={this._sendSms}>sms</button>
     </form>
     <table className="table">
       <thead>
@@ -47,6 +69,24 @@ var FormPage = React.createClass({
       </tbody>
     </table>
     </div>
+   );
+  },
+  //_addSms: function() {
+    //});
+  _sendSms: function(event){
+    event.preventDefault();
+    return (
+      $.ajax({
+        url: '/shoppinglist/sendsms',
+        dataType: 'json',
+        type: 'POST',
+        data: true,
+        success: function() {
+        }.bind(this),
+        error: function(xhr, status, err) {
+          console.error(this.props.url, status, err.toString());
+        }.bind(this)
+      })
    );
   },
   _handleDelete: function(event){
@@ -150,30 +190,3 @@ $(document).ready(function() {
     <FormPage/>,
     $('#content')[0]);
 });
-
-//var HomePage = React.createClass({
-//  render: function() {
-//    return (
-//      <p>heyyyy</p>
-//    );
-//  }
-//});
-//
-//var Main = React.create({
-//  getInitialState: function() {
-//    return {component: <div/>};
-//  },
-//  componentDidMount: function() {
-//  },
-//  render: function() {
-//    return this.state.component;
-//  }
-//});
-//$(document).ready(function(){
-//  React.render(
-//    <HomePage/>,
-//    $('#content1')[0]);
-//  React.render(
-//    <FormPage/>,
-//    $('#content2')[0]);
-//});
