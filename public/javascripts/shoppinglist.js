@@ -7,18 +7,31 @@ var FormPage = React.createClass({
     socket.on('sms recv', function(data) {
       var x = new Date();
       var y = x.getTime();
-      var post = {_id: y,'owner': data.from, 'item': data.items};
+      $.ajax({
+        url: '/shoppinglist/addto',
+        dataType: 'json',
+        type: 'POST',
+        data: {'itemid': y, 'owner': data.from, 'item': data.items},
+        success: function(data) {
+          console.log('data');
+          console.log(data);
 
-      console.log(this.state.ShopList[0]);
-      var newShopList = this.state.ShopList[0];
-      var newItems = newShopList.items;
-      newItems.push(post);
-      newShopList.items = newItems;
+          this.setState({ShopList: data});
 
-      this.setState({ShopList: [newShopList]});
+          console.log('**SUCCESS in ADDITEMS**');
+        }.bind(this),
+        error: function(xhr, status, err) {
+          console.error(this.props.url, status, err.toString());
+        }.bind(this)
+      });
+//      console.log(this.state.ShopList[0]);
+//      var newShopList = this.state.ShopList[0];
+//      var newItems = newShopList.items;
+//      newItems.push(post);
+//      newShopList.items = newItems;
+//
+//      this.setState({ShopList: [newShopList]});
 
-      console.log('smsed post');
-      console.log(post);
     }.bind(this));
 
     return({ShopList: []});
@@ -28,6 +41,7 @@ var FormPage = React.createClass({
     //BTW: currently loads most recent list on refresh
 
     $.getJSON('/shoppinglist/getlist', function(data) {
+      console.log('inside CompDIdMount GET');
       this.setState({ShopList: data});
     }.bind(this));
   },
@@ -35,16 +49,22 @@ var FormPage = React.createClass({
     var showList = [];
     var currList = this.state.ShopList;
     var currTitle = '';
+    console.log(showList);
     if (currList.length > 0) {
       currTitle = currList[0].shoplisttitle;
+      console.log('Rendering list: ');
+      console.log(currList[0].items);
       for (var i = 0; i < currList[0].items.length; i++) {
-        showList.push(<tr>);
-        showList.push(<td>{currList[0].items[i].owner}</td>);
-        showList.push(<td>{currList[0].items[i].item}</td>);
-        showList.push(<td><button onClick={this._handleDelete} rel={currList[0].items[i]._id} className="btn btn-danger btn-xs">destroy</button></td>);
-        showList.push(</tr>);
+        console.log('Adding list item!');
+        showList.push(<tr>
+                      <td>{currList[0].items[i].owner}</td>
+                      <td>{currList[0].items[i].item}</td>
+                      <td><button onClick={this._handleDelete} id={currList[0].items[i]._id} className="btn btn-danger btn-xs">destroy</button></td>
+                      </tr>);
+      }
     }
-    }
+    console.log('showList:');
+    console.log(showList);
     return (
     <div>
     <head>
@@ -95,16 +115,16 @@ var FormPage = React.createClass({
     event.preventDefault();
     console.log('inside DELETE');
 
-    var itemId = $(event.target).attr('rel');
+    var itemId = $(event.target).attr('id');
     $.ajax({
       type: 'DELETE',
       url: '/shoppinglist/deleteitem/' + itemId,
-      success: function(shoptitle) {
+      success: function(data) {
         console.log('success DELETE');
+        console.log('data');
+        console.log(data);
 
-        $.getJSON('/shoppinglist/getlist', function(data) {
-          this.setState({ShopList: data});
-        }.bind(this));
+        this.setState({ShopList: data});
       }.bind(this),
       error: function(xhr, status, err) {
         console.error(this.props.url, status, err.toString());
@@ -113,8 +133,8 @@ var FormPage = React.createClass({
   },
   _createNew: function(event) {
     event.preventDefault();
-    $('#titlefield').val = '';
     $('#titlefield').show();
+    $('#titlefield').val = '';
     $('#titlesubmit').show();
   },
   _postNew: function(event) {

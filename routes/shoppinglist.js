@@ -68,8 +68,10 @@ router.post('/addto', function(req, res) {
   var db = req.db;
   var targetList = req.body.shoplisttitle;
   var itemParams = {_id: req.body.itemid, 'owner': req.body.owner, 'item': req.body.item};
-  db.collection('listcollection').update( {'shoplisttitle': targetList}, {$push: {'items': itemParams}}, function(err, result) {
-    db.collection('listcollection').find( { 'shoplisttitle': targetList } ).toArray( function(err, shopList) {
+  db.collection('listcollection').update( {}, {$push: {'items': itemParams}}, function(err, result) {
+    db.collection('listcollection').find().toArray( function(err, shopList) {
+      console.log('in addto shopList');
+      console.log(shopList);
       res.json(shopList);
     });
   });
@@ -78,17 +80,18 @@ router.post('/addto', function(req, res) {
 router.delete('/deleteitem/:id', function(req, res) {
   var db = req.db;
   var targetId = req.params.id;
+  console.log('deleting item from Mongo:');
+  console.log(targetId);
 
-  db.collection('listcollection').find( { 'items': { $elemMatch: { _id: targetId } } } ).toArray( function(err, item) {
-
-    db.collection('listcollection').update( {}, {  $pull: { 'items': { _id: targetId } } }, { multi: true }, function(err, updated) {
-
-      db.collection('listcollection').find().toArray( function(err, shopList) {
+  db.collection('listcollection').update(
+    {},
+    { $pull: { 'items': { _id: targetId } } },
+    { multi: true },
+    function(err, updated) {
+      db.collection('listcollection').find().toArray(function(err, shopList) {
         res.json(shopList);
       });
     });
-  });
-
 });
 
 router.get('/getlist', function(req, res) {
@@ -96,7 +99,8 @@ router.get('/getlist', function(req, res) {
 
   var db = req.db;
   db.collection('listcollection').find().toArray(function(err, theList) {
-
+    console.log('the list');
+    console.log(theList);
     res.json(theList);
   });
 });
