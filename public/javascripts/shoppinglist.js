@@ -36,12 +36,12 @@ var FormPage = React.createClass({
     var currList = this.state.ShopList;
     var currTitle = '';
     if (currList.length > 0) {
-    currTitle = currList[currList.length-1].shoplisttitle;
-      for (var i = 0; i < currList[currList.length-1].items.length; i++) {
+      currTitle = currList[0].shoplisttitle;
+      for (var i = 0; i < currList[0].items.length; i++) {
         showList.push(<tr>);
-        showList.push(<td>{currList[currList.length-1].items[i].owner}</td>);
-        showList.push(<td>{currList[currList.length-1].items[i].item}</td>);
-        showList.push(<td><button onClick={this._handleDelete} rel={currList[currList.length-1].items[i]._id} className="btn btn-primary">x</button></td>);
+        showList.push(<td>{currList[0].items[i].owner}</td>);
+        showList.push(<td>{currList[0].items[i].item}</td>);
+        showList.push(<td><button onClick={this._handleDelete} rel={currList[0].items[i]._id} className="btn btn-danger btn-xs">destroy</button></td>);
         showList.push(</tr>);
     }
     }
@@ -55,10 +55,11 @@ var FormPage = React.createClass({
       <br/>
       <textarea rows="10" cols="80" ref="itemfield" placeholder="enter item.."/>
       <br/>
-      <button className="btn btn-primary" onClick={this._addItems}>add item(s)</button>
       <button className="btn btn-primary" onClick={this._createNew}>create new list</button>
-      <button id="titlesubmit" className="btn btn-primary" style={{display:'none'}} onClick={this._postNew}>post new list</button>
-      <button className="btn btn-primary" onClick={this._sendSms}>sms</button>
+      <button id="titlesubmit" className="btn btn-default" style={{display:'none'}} onClick={this._postNew}>post new list</button>
+      <button className="btn btn-info" onClick={this._addItems}>add item(s)</button>
+      <button className="btn btn-warning" onClick={this._sendSms}>sms</button>
+      <button className="btn btn-success" onClick={this._authUser}>authUser</button>
     </form>
     <table className="table">
       <thead>
@@ -71,8 +72,9 @@ var FormPage = React.createClass({
     </div>
    );
   },
-  //_addSms: function() {
-    //});
+  _authUser: function(event) {
+    event.preventDefault();
+  },
   _sendSms: function(event){
     event.preventDefault();
     return (
@@ -101,14 +103,7 @@ var FormPage = React.createClass({
         console.log('success DELETE');
 
         $.getJSON('/shoppinglist/getlist', function(data) {
-          console.log('in GET in DELETE');
-
-          data.forEach( function(shopObj) {
-            if (shopObj.shoplisttitle === shoptitle) {
-
-              this.setState({ShopList: [shopObj]});
-            }
-          }.bind(this));
+          this.setState({ShopList: data});
         }.bind(this));
       }.bind(this),
       error: function(xhr, status, err) {
