@@ -13,6 +13,13 @@ module.exports = function(io) {
     });
   });
 
+router.get('/webhook', function(req, res) {
+  var venmo = req.query.venmo_challenge;
+  console.log(venmo);
+  res.type('text/plain');
+  res.send(venmo);
+});
+
 router.post('/sendsms', function(req, res) {
   console.log('inside sendsms');
   var accountSid = process.env.ACCOUNTSID;
@@ -38,6 +45,15 @@ router.post('/sendsms', function(req, res) {
                             res.json(true);
 });
 
+router.post('/postprice', function(req, res) {
+  var db = req.db;
+  var price = req.body.price;
+  var id = req.body._id;
+  db.collection('listcollection').update({"items._id": id}, {"$set": {"items.$.price": price}}, function(err, list) {
+    res.json(list);
+  });
+});
+
 router.post('/addfromsms', function(req, res) {
   var data = {
     'from' : req.body.From,
@@ -51,7 +67,7 @@ router.post('/postnewlist', function(req, res) {
   console.log('inside post postnewlist');
 
   var db = req.db;
-  var itemParams = {_id: req.body.itemid, 'shoplisttitle': req.body.shoplisttitle, 'owner': req.body.owner, 'item': req.body.item};
+  var itemParams = {_id: req.body.itemid, 'shoplisttitle': req.body.shoplisttitle, 'owner': req.body.owner, 'item': req.body.item, 'price': req.body.price};
   var shopListParams = {_id: req.body._id, 'shoplisttitle':req.body.shoplisttitle, 'items':[itemParams]};
   db.collection('listcollection').remove({}, function(err, result) {
     db.collection('listcollection').insert(shopListParams, function(err, newList) {
@@ -67,7 +83,7 @@ router.post('/addto', function(req, res) {
 
   var db = req.db;
   var targetList = req.body.shoplisttitle;
-  var itemParams = {_id: req.body.itemid, 'owner': req.body.owner, 'item': req.body.item};
+  var itemParams = {_id: req.body.itemid, 'owner': req.body.owner, 'item': req.body.item, 'price': req.body.price};
   db.collection('listcollection').update( {}, {$push: {'items': itemParams}}, function(err, result) {
     db.collection('listcollection').find().toArray( function(err, shopList) {
       console.log('in addto shopList');

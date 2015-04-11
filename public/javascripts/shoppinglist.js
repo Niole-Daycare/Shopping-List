@@ -2,6 +2,13 @@
 /*global React*/
 var socket = io();
 
+function getParameterByName(name) {
+  name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+  var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+  results = regex.exec(location.search);
+  return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
 var FormPage = React.createClass({
   getInitialState: function() {
     socket.on('sms recv', function(data) {
@@ -11,7 +18,7 @@ var FormPage = React.createClass({
         url: '/shoppinglist/addto',
         dataType: 'json',
         type: 'POST',
-        data: {'itemid': y, 'owner': data.from, 'item': data.items},
+        data: {'itemid': y, 'owner': data.from, 'item': data.items,'price': ''},
         success: function(data) {
           console.log('data');
           console.log(data);
@@ -41,7 +48,6 @@ var FormPage = React.createClass({
     //BTW: currently loads most recent list on refresh
 
     $.getJSON('/shoppinglist/getlist', function(data) {
-      console.log('inside CompDIdMount GET');
       this.setState({ShopList: data});
     }.bind(this));
   },
@@ -49,26 +55,38 @@ var FormPage = React.createClass({
     var showList = [];
     var currList = this.state.ShopList;
     var currTitle = '';
-    console.log(showList);
     if (currList.length > 0) {
       currTitle = currList[0].shoplisttitle;
-      console.log('Rendering list: ');
-      console.log(currList[0].items);
       for (var i = 0; i < currList[0].items.length; i++) {
-        console.log('Adding list item!');
         showList.push(<tr>
                       <td>{currList[0].items[i].owner}</td>
                       <td>{currList[0].items[i].item}</td>
+                      <td><input type="text" ref="pricefield"/></td>
+                      <td><button onClick={this._submitPrice} id={currList[0].items[i]._id} className="btn btn-success btn-xs">$</button></td>
                       <td><button onClick={this._handleDelete} id={currList[0].items[i]._id} className="btn btn-danger btn-xs">destroy</button></td>
                       </tr>);
       }
     }
-    console.log('showList:');
-    console.log(showList);
+    var authButton;
+    var userInfo;
+    if (getParameterByName('access_token') === '') {
+      authButton = <button className="btn btn-success" onClick={this._authUser}>authUser</button>;
+    } else {
+      $.ajax({
+        url: 'https://api.venmo.com/v1/me?access_token=' + getParameterByName('access_token'),
+        dataType: 'json',
+        type: 'GET',
+        success: function(res) {
+          console.log(res);
+        }.bind(this),
+        error: function(xhr, status, err) {
+          console.error(this.props.url, status, err.toString());
+        }.bind(this)
+      });
+    }
     return (
     <div>
     <head>
-    <script type="text/javascript" src="sms.js"/>
     </head>
     <form>
       <input type="text" ref="namefield" placeholder="enter name.."/>
@@ -79,7 +97,7 @@ var FormPage = React.createClass({
       <button id="titlesubmit" className="btn btn-default" style={{display:'none'}} onClick={this._postNew}>post new list</button>
       <button className="btn btn-info" onClick={this._addItems}>add item(s)</button>
       <button className="btn btn-warning" onClick={this._sendSms}>sms</button>
-      <button className="btn btn-success" onClick={this._authUser}>authUser</button>
+      {authButton}
     </form>
     <table className="table">
       <thead>
@@ -92,8 +110,34 @@ var FormPage = React.createClass({
     </div>
    );
   },
+  _submitPrice: function(event) {
+    event.preventDefault();
+    var price = this.refs.pricefield.getDOMNode().value.trim();
+    this.refs.pricefield.getDOMNode().value = '';
+    var itemID = $(event.target).attr('id');
+
+    $.ajax({
+      url: '/shoppinglist/postprice',
+      dataType: 'json',
+      type: 'POST',
+      data: {'price': price, _id: itemID},
+      success: function() {
+      }.bind(this),
+      error: function(xhr, status, err) {
+        console.error(this.props.url, status, err.toString());
+      }.bind(this)
+    });
+  },
   _authUser: function(event) {
     event.preventDefault();
+    window.location = "https://api.venmo.com/v1/oauth/authorize?client_id=2524&scope=make_payments%20access_profile";
+    //var redirectUrl = this.getUrl;
+    //console.log('redirectUrl: '+redirectUrl);
+    //var startAT = redirectUrl.indexOf("access_token");
+    //console.log('startAT: '+startAt);
+    //var accessToken = redirectUrl.substr(startAT+14);
+    //console.log('accessToken');
+    //console.log(accessToken);
   },
   _sendSms: function(event){
     event.preventDefault();
@@ -156,7 +200,7 @@ var FormPage = React.createClass({
       url: '/shoppinglist/postnewlist',
       dataType: 'json',
       type: 'POST',
-      data: {'shoplisttitle': addTitle, 'itemid': y, 'owner': addName, 'item': addItems},
+      data: {'shoplisttitle': addTitle, 'itemid': y, 'owner': addName, 'item': addItems, 'price': ''},
       success: function(data) {
         console.log('SUCCESS in POSTNEW');
 
@@ -186,11 +230,9 @@ var FormPage = React.createClass({
       url: '/shoppinglist/addto',
       dataType: 'json',
       type: 'POST',
-      data: {'shoplisttitle': addTitle, 'itemid': y, 'owner': addName, 'item': addItems},
+      data: {'shoplisttitle': addTitle, 'itemid': y, 'owner': addName, 'item': addItems, 'price': ''},
       success: function(data) {
-
         this.setState({ShopList: data});
-
         console.log('**SUCCESS in ADDITEMS**');
       }.bind(this),
       error: function(xhr, status, err) {
